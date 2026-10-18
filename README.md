@@ -93,7 +93,23 @@ attack the MCP server. See the homework description for the full rules.
 > to students: this is your report, see the homework description.
 
 ### Task 1
-> one paragraph describing your solution, and your results on `public_test`.
+The solution implements a multi-stage agentic AI workflow to verify CVs against LinkedIn and Facebook profiles using MCP tools. First, the agent extracts key claims from each CV, including the candidate’s name, professional title, location, employment history, education, and skills. It then searches LinkedIn using the candidate’s name and location, with an industry-based fallback when search results reach the limit without identifying a suitable match, and retrieves relevant profile details. Facebook is used as supplementary evidence to help confirm the candidate’s identity. Finally, the agent compares the extracted CV claims with the retrieved profile information, checking for discrepancies in employment details, education, and skills while accounting for acceptable wording differences and distinguishing missing information from unsupported claims. The workflow uses structured JSON outputs between stages, bounded concurrency, and retries to improve reliability. 
+
+On the public test set, the solution achieved **100% accuracy (7/7)**.
+
+| CV | Score | Correctness |
+|---|---:|---|
+| CV_1.pdf | 0.9500 | Correct |
+| CV_2.pdf | 0.9500 | Correct |
+| CV_3.pdf | 0.9500 | Correct |
+| CV_4.pdf | 0.1500 | Correct |
+| CV_5.pdf | 0.1500 | Correct |
+| CV_6.pdf | 0.9500 | Correct |
+| CV_7.pdf | 0.1500 | Correct |
+
 
 ### Task 2
-> the attack techniques you used and why you expect them to work.
+The attack uses a visual overlay that the PDF text layer does not contain. We kept the education line as "BSc in Finance", which matches the profile, and placed a small image of the letter "M" over the "B". No hidden text, alt text, annotations, or metadata carry the false claim, so there is no secondary channel that could leak "MSc" into an extractor's output; the lie exists solely in pixels, and every text-visible value in the CV remains true to the target profile.
+
+This is expected to work because all five verifiers, per the problem statement, load CVs with markitdown(enable_plugins=False), which is a text-only parser with no OCR. They compare "BSc" with "BSc" and find no difference on degree, school, field, or year, and the rest of the CV is fully true. Since what the verifiers read is clean, the result should stay above 0.5 on all three runs rather than depending on a weak model's mood. The only ways it fails are if a verifier secretly uses OCR or a layout-aware parser, or if the grader checks for a real lie using the same text-only loader instead of reading the page like a person. Both go against the stated setup.
+
